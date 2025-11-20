@@ -2,44 +2,85 @@
 <html>
 <head>
     <title>Sentiment Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://d3js.org/d3.v7.min.js"></script>
 </head>
-<body>
-    <h2>Sentiment Overview</h2>
+
+<body class="bg-gray-100 p-8 font-sans">
+
+    <h1 class="text-3xl font-bold mb-6">Sentiment Dashboard</h1>
+
+    <div class="bg-white p-4 shadow rounded mb-8">
+        <textarea id="text" class="border p-2 w-full" rows="3" placeholder="Type something..."></textarea>
+        <button onclick="analyze()" class="bg-blue-600 text-white px-4 py-2 mt-2 rounded">Analyze</button>
+        <p id="msg" class="mt-2 text-green-600 font-medium"></p>
+    </div>
+
+    <h2 class="text-xl font-bold mb-3">Sentiment Summary</h2>
     <div id="chart"></div>
+
     <script>
-        fetch("/api/sentiment_results")
-          .then(response => response.json())
-          .then(data => {
-            let counts = {Positive:0, Negative:0, Neutral:0, Mixed:0};
-            data.forEach(d => { counts[d.sentiment] = (counts[d.sentiment] || 0) + 1; });
+        function loadChart() {
+            fetch("/api/sentiment_results")
+            .then(r => r.json())
+            .then(data => {
+                let counts = {Positive:0, Negative:0, Neutral:0};
 
-            const width = 400, height = 300;
-            const svg = d3.select("#chart")
-                .append("svg")
-                .attr("width", width)
-                .attr("height", height);
+                data.forEach(d => counts[d.sentiment]++);
 
-            const sentiments = Object.keys(counts);
-            svg.selectAll("rect")
-                .data(sentiments)
-                .enter()
-                .append("rect")
-                .attr("x", (d, i) => i * 80)
-                .attr("y", d => height - counts[d] * 20)
-                .attr("width", 60)
-                .attr("height", d => counts[d] * 20)
-                .attr("fill", "teal");
+                const width = 450, height = 250;
+                d3.select("#chart").html("");
 
-            svg.selectAll("text")
-                .data(sentiments)
-                .enter()
-                .append("text")
-                .attr("x", (d, i) => i * 80 + 30)
-                .attr("y", height - 10)
-                .attr("text-anchor", "middle")
-                .text(d => d);
-          });
+                const svg = d3.select("#chart")
+                    .append("svg")
+                    .attr("width", width)
+                    .attr("height", height);
+
+                const sentiments = Object.keys(counts);
+
+                svg.selectAll("rect")
+                    .data(sentiments)
+                    .enter()
+                    .append("rect")
+                    .attr("x", (d,i)=> i*140)
+                    .attr("y", d => height - counts[d] * 40)
+                    .attr("width", 100)
+                    .attr("height", d => counts[d] * 40)
+                    .attr("fill", "teal");
+
+                svg.selectAll("text")
+                    .data(sentiments)
+                    .enter()
+                    .append("text")
+                    .attr("x", (d,i)=> i*140 + 50)
+                    .attr("y", height - 10)
+                    .attr("text-anchor","middle")
+                    .text(d => d + " (" + counts[d] + ")");
+            });
+        }
+
+        function analyze() {
+            let text = document.getElementById("text").value;
+            document.getElementById("msg").innerHTML = "Processing...";
+
+            fetch("/api/analyze_sentiment", {
+                method: "POST",
+                headers: {"Content-Type":"application/json"},
+                body: JSON.stringify({text})
+            })
+            .then(r => r.json())
+            .then(res => {
+                if(res.error){
+                    document.getElementById("msg").innerHTML = res.error;
+                } else {
+                    document.getElementById("msg").innerHTML = "Sentiment: <b>"+res.sentiment+"</b>";
+                    loadChart();
+                }
+            });
+        }
+
+        loadChart();
     </script>
+
 </body>
 </html>
