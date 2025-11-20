@@ -1,20 +1,23 @@
-from flask import Flask, jsonify
-import boto3
-import json
+# sentiment.py
 
-app = Flask(_name_)
-s3 = boto3.client('s3')
+def simple_sentiment(text):
+    text = text.lower()
 
-@app.route('/api/sentiment_results')
-def get_sentiments():
-    bucket = 'your-s3-bucket'
-    response = s3.list_objects_v2(Bucket=bucket, Prefix='results/')
-    results = []
-    for obj in response.get('Contents', []):
-        data = s3.get_object(Bucket=bucket, Key=obj['Key'])
-        result = json.loads(data['Body'].read())
-        results.append(result)
-    return jsonify(results)
+    positive_words = ["good", "great", "excellent", "happy", "love", "nice"]
+    negative_words = ["bad", "sad", "terrible", "poor", "hate", "angry"]
 
-if _name_ == '_main_':
-    app.run(debug=True)
+    score = 0
+    for w in positive_words:
+        if w in text:
+            score += 1
+
+    for w in negative_words:
+        if w in text:
+            score -= 1
+
+    if score > 0:
+        return "Positive"
+    elif score < 0:
+        return "Negative"
+    else:
+        return "Neutral"
