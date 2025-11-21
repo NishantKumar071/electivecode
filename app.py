@@ -2,7 +2,7 @@ from flask import Flask, send_file, jsonify, request
 import json, os, time, uuid
 from sentiment import simple_sentiment
 
-app = Flask(_name_)
+app = Flask(__name__)
 DATA_FILE = "sentiments.json"
 
 # Create local DB if missing
